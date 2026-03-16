@@ -56,6 +56,14 @@ var WxRenderer = function (opts) {
     return footnoteindex
   }
 
+  var unwrapListItemParagraph = function (html) {
+    var match = html.match(/^<p\b[^>]*>([\s\S]*?)<\/p>([\s\S]*)$/)
+    if (!match) {
+      return html
+    }
+    return match[1] + match[2]
+  }
+
   this.buildFootnotes = function () {
     var footnoteArray = footnotes.map(function (x) {
       if (x[1] === x[2]) {
@@ -118,19 +126,22 @@ var WxRenderer = function (opts) {
       return '<code ' + S('codespan') + '>' + text + '</code>'
     }
     renderer.listitem = function (text) {
-      return '<span ' + S('listitem') + '><span style="margin-right: 10px;"><%s/></span>' + text + '</span>';
+      var content = unwrapListItemParagraph(text)
+      return '<div ' + S('listitem') + '><span style="margin-right: 10px;"><%s/></span>' + content + '</div>';
     }
     renderer.list = function (text, ordered, start) {
       var segments = text.split('<%s/>');
       if (!ordered) {
         text = segments.join('•');
-        return '<p ' + S('ul') + '>' + text + '</p>';
+        return '<div ' + S('ul') + '>' + text + '</div>';
       }
       text = segments[0];
+      var index = typeof start === 'number' ? start : 1;
       for (var i = 1; i < segments.length; i++) {
-        text = text + i + '.' + segments[i];
+        text = text + index + '.' + segments[i];
+        index += 1;
       }
-      return '<p ' + S('ol') + '>' + text + '</p>';
+      return '<div ' + S('ol') + '>' + text + '</div>';
     }
     renderer.image = function (href, title, text) {
       return '<img ' + S(ENV_STETCH_IMAGE ? 'image' : 'image_org') + ' src="' + href + '" title="'+title+'" alt="'+text+'"/>'
